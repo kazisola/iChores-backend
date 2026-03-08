@@ -1,14 +1,15 @@
 import { createSchema } from "graphql-yoga";
+import type { GraphQLContext } from "./context.js";
 
-export const schema = createSchema({
+export const schema = createSchema<GraphQLContext>({
     typeDefs: /* GraphQL */ `
         type Query {
             user: User!
         }
         type User {
-            name: String!,
-            email: String!,
-            password: String!,
+            name: String!
+            email: String!
+            password: String!
             householdId: String
         }
     `,
