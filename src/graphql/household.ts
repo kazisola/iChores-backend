@@ -33,6 +33,7 @@ export const householdTypeDefs = /* GraphQL */ `
     type Mutation {
         createHousehold(input: CreateHouseholdInput): Household!
         addHouseholdMember(input: AddMemberInput): Household!
+        removeHouseholdMember(name: String): Household!
     }
 `
 export const householdResolvers = {
@@ -65,15 +66,30 @@ export const householdResolvers = {
             if(!user.householdId) throw new Error("Create an household first!")
             const household = await Household.findById(user.householdId);
             if(!household) throw new Error("Household doesn't exist!");
-            const memberExists = household.members.some(member => member.name.toLowerCase() === args.input?.name.toLowerCase());
 
-            if(!memberExists) throw new Error(`${args.input?.name} already exists!`);
+            const memberExists = household.members.some(member => member.name.trim().toLowerCase() === args.input?.name.trim().toLowerCase());
+
+            if(memberExists) throw new Error(`${args.input?.name} already exists!`);
 
             household.members.push({
                 userId: user._id as mongoose.Types.ObjectId,
                 name: args.input.name,
                 role: "member"
             })
+
+            await household.save();
+
+            return household;
+        },
+        removeHouseholdMember: async (_: unknown, args: { name: string }, context: GraphQLContext) => {
+            const user = requireAuth(context);
+            const household = await Household.findById(user.householdId);
+            if(!household) throw new Error("Household not found!");
+
+            const doesExist = household.members.find(member => member.name.toLowerCase() === args.name.trim().toLowerCase());
+            if(!doesExist) throw new Error("This member doesn't exist!")
+
+            household.members = household.members.filter(member => member.name.toLowerCase() !== args.name.trim().toLowerCase());
 
             await household.save();
 
