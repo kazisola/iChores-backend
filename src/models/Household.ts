@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export interface IHouseholdMember extends Document {
+export interface IHouseholdMember {
     userId: mongoose.Types.ObjectId,
     name: string,
     role: "owner" | "member"

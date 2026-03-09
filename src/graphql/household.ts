@@ -1,3 +1,4 @@
+import type mongoose from "mongoose";
 import { Household } from "../models/Household.js";
 import { User } from "../models/User.js";
 import { requireAuth, type GraphQLContext } from "./context.js"
