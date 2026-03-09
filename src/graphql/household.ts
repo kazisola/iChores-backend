@@ -26,8 +26,13 @@ export const householdTypeDefs = /* GraphQL */ `
     input CreateHouseholdInput {
         name: String
     }
+    input AddMemberInput {
+        name: String!
+    }
+
     type Mutation {
         createHousehold(input: CreateHouseholdInput): Household!
+        addHouseholdMember(input: AddMemberInput): Household!
     }
 `
 export const householdResolvers = {
@@ -51,6 +56,26 @@ export const householdResolvers = {
             })
             
             await User.findByIdAndUpdate(user._id, { householdId: household._id });
+
+            return household;
+        },
+        addHouseholdMember: async (_: unknown, args: { input: { name: string } }, context: GraphQLContext) => {
+            const user = requireAuth(context);
+
+            if(!user.householdId) throw new Error("Create an household first!")
+            const household = await Household.findById(user.householdId);
+            if(!household) throw new Error("Household doesn't exist!");
+            const memberExists = household.members.some(member => member.name.toLowerCase() === args.input?.name.toLowerCase());
+
+            if(!memberExists) throw new Error(`${args.input?.name} already exists!`);
+
+            household.members.push({
+                userId: user._id as mongoose.Types.ObjectId,
+                name: args.input.name,
+                role: "member"
+            })
+
+            await household.save();
 
             return household;
         }
