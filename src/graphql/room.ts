@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Room } from "../models/Room.js";
 import { requireAuth, type GraphQLContext } from "./context.js"
 
@@ -22,6 +23,7 @@ export const roomTypeDefs = /* GraphQL */ `
         h: Int!
     }
     type Room {
+        id: ID!
         householdId: ID!
         type: RoomType!
         position: RoomPosition!
@@ -63,6 +65,11 @@ export const roomTypeDefs = /* GraphQL */ `
 
     type Mutation {
         addRoom(input: AddRoomInput): Room!
+        removeRoom(id: String): MutationResponse!
+    }
+    type MutationResponse {
+        success: Boolean!
+        message: String!
     }
 `
 
@@ -76,10 +83,8 @@ export const roomResolvers = {
     Query: {
         myRooms: async (_: unknown, __: unknown, context: GraphQLContext) => {
             const user = requireAuth(context);
-            console.log("user:", user);
             if (!user.householdId) return [];
             const rooms = await Room.find({ householdId: user.householdId });
-            console.log("rooms:", rooms)
             return rooms;
         }
     },
@@ -98,6 +103,17 @@ export const roomResolvers = {
                 position
             });
             return room;
+        },
+        removeRoom: async (_: unknown, args: { id: string }, context: GraphQLContext) => {
+            const user = requireAuth(context);
+            if(!user.householdId) throw new Error("No household found!")
+            
+            const room = await Room.findOneAndDelete(
+                { _id: args.id, householdId: user.householdId }
+            )
+            if(!room) throw new Error("Room wasn't found!")
+
+            return { success: true, message: "Room was removed successfully!" };
         }
     }
 }
