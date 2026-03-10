@@ -35,7 +35,7 @@ export const taskTypeDefs = /* GraphQL */ `
         urgency: Urgency!
     }
     type Query {
-        myTasks: [Task!]!
+        myTasks(roomId: ID): [Task!]!
     }
     type Mutation {
         createTask(input: CreateTaskInput): Task!
