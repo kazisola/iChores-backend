@@ -13,7 +13,6 @@ export interface IRoom extends Document {
     householdId: mongoose.Types.ObjectId,
     type: RoomType,
     position: IRoomPosition,
-    name: string,
     label: string,
     icon: string,
     color: string,
@@ -43,11 +42,6 @@ const RoomSchema = new Schema<IRoom>({
     position: {
         type: RoomPositionSchema,
         default: () => ({ x: 80, y: 80, w: 160, h: 120 })
-    },
-    name: {
-        type: String,
-        required: true,
-        trim: true
     },
     label: {
         type: String,
