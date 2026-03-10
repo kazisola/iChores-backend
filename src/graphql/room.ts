@@ -53,7 +53,7 @@ export const roomTypeDefs = /* GraphQL */ `
     }
     input UpdateRoomLabelInput {
         roomId: ID!
-        lbale: String!
+        label: String!
     }
     input AddRoomInput {
         type: String!
@@ -67,6 +67,7 @@ export const roomTypeDefs = /* GraphQL */ `
         addRoom(input: AddRoomInput): Room!
         removeRoom(id: String): MutationResponse!
         updateRoomPosition(input: UpdateRoomPositionInput): Room!
+        updateRoomLabel(input: UpdateRoomLabelInput): Room!
     }
     type MutationResponse {
         success: Boolean!
@@ -116,6 +117,15 @@ export const roomResolvers = {
                 }
             }, { new: true });
         },
+        updateRoomLabel: async (_: unknown, args: { input: { roomId: mongoose.Types.ObjectId, label: string } }, context: GraphQLContext) => {
+            const user = requireAuth(context);
+            if (!user.householdId) throw new Error("No household found!");
+            
+            return await Room.findByIdAndUpdate(args.input.roomId, {
+                label: args.input.label
+            }, { new: true });
+        }
+        ,
         removeRoom: async (_: unknown, args: { id: string }, context: GraphQLContext) => {
             const user = requireAuth(context);
             if (!user.householdId) throw new Error("No household found!")
