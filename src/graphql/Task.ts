@@ -1,0 +1,83 @@
+import type mongoose from "mongoose";
+import { Task } from "../models/Task.js";
+import { requireAuth, type GraphQLContext } from "./context.js"
+import { Room } from "../models/Room.js";
+
+export const taskTypeDefs = /* GraphQL */ `
+    scalar DateTime
+    enum RecurType {
+        one_time 
+        daily
+        weekly
+        bi_weekly
+        monthly
+        quarterly
+        yearly
+    }
+    enum Urgency {
+        red
+        yellow
+        green
+    }
+    type Task {
+        id: ID!
+        roomId: ID!
+        householdId: ID!
+        title: String!
+        dueDate: DateTime
+        recur: RecurType
+        assigneeName: String!
+        isCompleted: Boolean!
+        completedAt: DateTime
+        completedBy: DateTime
+        createdAt: DateTime
+        updatedAt: DateTime
+        urgency: Urgency!
+    }
+    type Query {
+        myTasks: [Task!]!
+    }
+    type Mutation {
+        createTask(input: CreateTaskInput): Task!
+    }
+    input CreateTaskInput {
+        roomId: ID!
+        title: String!
+        dueDate: DateTime
+        recur: RecurType
+        assigneeName: String!
+    }
+`
+
+export const taskResolvers = {
+    DateTime: {
+        serialize: (value: Date | string) => new Date(value).toISOString(),
+        parseValue: (value: string) => new Date(value),
+    },
+    Query: {
+        myTasks: async (_: unknown, args: { roomId?: string }, context: GraphQLContext) => {
+            const user = requireAuth(context);
+            if (!user.householdId) return [];
+            const filter: { householdId: mongoose.Types.ObjectId, roomId?: string, isCompleted: boolean } = {
+                householdId: user.householdId,
+                isCompleted: false
+            }
+            if (args.roomId) filter.roomId = args.roomId;
+            return await Task.find(filter).sort({ dueDate: 1 });
+        }
+    },
+    Mutation: {
+        createTask: async (_: unknown, args: { input: { roomId: string, title: string, dueDate: Date, recur: string, assigneeName: string } }, context: GraphQLContext) => {
+            const user = requireAuth(context);
+            if (!user.householdId) throw new Error("No household found! You can't create task yet.");
+
+            const room = await Room.findOne({ _id: args.input.roomId, householdId: user.householdId });
+            if (!room) throw new Error("Room not found!");
+
+            return await Task.create({
+                householdId: user.householdId,
+                ...args.input
+            })
+        }
+    }
+}

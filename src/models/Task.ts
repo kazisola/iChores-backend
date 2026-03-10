@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type RecurType = | "one-time" | "daily" | "weekly" | "bi-weekly" | "monthly" | "quarterly" | "yearly";
+export type RecurType = | "one_time" | "daily" | "weekly" | "bi_weekly" | "monthly" | "quarterly" | "yearly";
 
 export type UrgencyType = | "red" | "yellow" | "green";
 
@@ -44,8 +44,8 @@ const TaskSchema = new Schema<ITask>({
     },
     recur: {
         type: String,
-        enum: ["one-time", "daily", "weekly", "bi-weekly", "monthly", "quarterly", "yearly"],
-        default: "one-time"
+        enum: ["one_time", "daily", "weekly", "bi_weekly", "monthly", "quarterly", "yearly"],
+        default: "one_time"
     },
     assigneeName: {
         type: String,
