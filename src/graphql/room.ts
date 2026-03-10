@@ -66,6 +66,7 @@ export const roomTypeDefs = /* GraphQL */ `
     type Mutation {
         addRoom(input: AddRoomInput): Room!
         removeRoom(id: String): MutationResponse!
+        updateRoomPosition(input: UpdateRoomPositionInput): Room!
     }
     type MutationResponse {
         success: Boolean!
@@ -91,7 +92,7 @@ export const roomResolvers = {
     Mutation: {
         addRoom: async (_: unknown, args: { input: { type: string, label: string, icon: string, color: string, position: { x: number, y: number, w: number, h: number } } }, context: GraphQLContext) => {
             const user = requireAuth(context);
-            if(!user.householdId) throw new Error ("Create household first!")
+            if (!user.householdId) throw new Error("Create household first!")
             const { type, label, icon, color, position } = args.input || {};
 
             const room = await Room.create({
@@ -104,14 +105,25 @@ export const roomResolvers = {
             });
             return room;
         },
+        updateRoomPosition: async (_: unknown, args: { input: { roomId: unknown, x: number, y: number, w: number, h: number } }, context: GraphQLContext) => {
+            const user = requireAuth(context);
+            if (!user.householdId) throw new Error("No household found!");
+            const { roomId, x, y, w, h } = args.input || {};
+
+            return await Room.findByIdAndUpdate(roomId, {
+                position: {
+                    x, y, w, h
+                }
+            }, { new: true });
+        },
         removeRoom: async (_: unknown, args: { id: string }, context: GraphQLContext) => {
             const user = requireAuth(context);
-            if(!user.householdId) throw new Error("No household found!")
-            
+            if (!user.householdId) throw new Error("No household found!")
+
             const room = await Room.findOneAndDelete(
                 { _id: args.id, householdId: user.householdId }
             )
-            if(!room) throw new Error("Room wasn't found!")
+            if (!room) throw new Error("Room wasn't found!")
 
             return { success: true, message: "Room was removed successfully!" };
         }
