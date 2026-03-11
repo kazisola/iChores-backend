@@ -101,6 +101,7 @@ export const taskResolvers = {
                 }
             )
             if(!task) throw new Error("No task were found!");
+            await task.save();
             return { success: true, message: "Task were completed!" }
         },
         removeTask: async (_: unknown, args: { taskId: string }, context: GraphQLContext) => {

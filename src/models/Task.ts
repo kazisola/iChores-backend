@@ -13,7 +13,7 @@ export interface ITask extends Document {
     assigneeName: string,
     isCompleted: boolean,
     completedAt?: Date,
-    completedBy?: Date,
+    completedBy?: string,
     createdAt: Date,
     updatedAt: Date
     // ffr... A "virtual", computed on the fly, not stored in DB
@@ -82,34 +82,32 @@ TaskSchema.virtual("urgency").get(function (): UrgencyType {
     return "green";
 });
 
-// // POST-SAVE HOOK
-// // When a recurring task is completed, automatically create the next one.
-// // "post" hooks run AFTER the operation completes.
+// POST-SAVE HOOK
+// When a recurring task is completed, automatically create the next one.
+//"post" hooks run AFTER the operation completes.
+TaskSchema.post("save", async function () {
+    if (!this.isCompleted || this.recur === "one_time") return;
 
-// TaskSchema.post("save", async function () {
-//     if (!this.isCompleted || this.recur === "one-time") return;
+    const recurMap: Record<string, number> = {
+        daily: 1, weekly: 7, "bi_weekly": 14,
+        monthly: 30, quarterly: 90, yearly: 365,
+    };
 
-//     const recurMap: Record<string, number> = {
-//         daily: 1, weekly: 7, "bi-weekly": 14,
-//         monthly: 30, quarterly: 90, yearly: 365,
-//     };
+    const days = recurMap[this.recur];
+    if (!days || !this.dueDate) return;
 
-//     const days = recurMap[this.recur];
-//     if (!days || !this.dueDate) return;
+    const nextDue = new Date(this.dueDate);
+    nextDue.setDate(nextDue.getDate() + days);
 
-//     const nextDue = new Date(this.dueDate);
-//     nextDue.setDate(nextDue.getDate() + days);
-
-//     // Create the next occurrence —  import the model here to avoid circular dependency issues
-//     const { Task } = await import("./Task");
-//     await Task.create({
-//         roomId: this.roomId,
-//         householdId: this.householdId,
-//         title: this.title,
-//         dueDate: nextDue,
-//         recur: this.recur,
-//         assigneeName: this.assigneeName,
-//     });
-// });
+    // Create the next occurrence
+    await Task.create({
+        roomId: this.roomId,
+        householdId: this.householdId,
+        title: this.title,
+        dueDate: nextDue,
+        recur: this.recur,
+        assigneeName: this.assigneeName,
+    });
+});
 
 export const Task = mongoose.model<ITask>("Task", TaskSchema);
