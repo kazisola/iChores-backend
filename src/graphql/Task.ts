@@ -39,6 +39,7 @@ export const taskTypeDefs = /* GraphQL */ `
     }
     type Mutation {
         createTask(input: CreateTaskInput): Task!
+        completeTask(input: CompleteTaskInput): MutationResponse!
         removeTask(taskId: String): MutationResponse!
     }
     input CreateTaskInput {
@@ -47,6 +48,10 @@ export const taskTypeDefs = /* GraphQL */ `
         dueDate: DateTime
         recur: RecurType
         assigneeName: String!
+    }
+    input CompleteTaskInput {
+        taskId: ID!
+        completedBy: String!
     }
     type MutationResponse {
         success: Boolean!,
@@ -83,6 +88,20 @@ export const taskResolvers = {
                 householdId: user.householdId,
                 ...args.input
             })
+        },
+        completeTask: async (_: unknown, args: { input: { taskId: string, completedBy: string } }, context: GraphQLContext ) => {
+            const user = requireAuth(context);
+            if(!user.householdId) throw new Error("No household found!");
+            const task = await Task.findOneAndUpdate(
+                { _id: args.input.taskId, householdId: user.householdId },
+                {
+                    completedBy: args.input.completedBy,
+                    isCompleted: true,
+                    completedAt: new Date()
+                }
+            )
+            if(!task) throw new Error("No task were found!");
+            return { success: true, message: "Task were completed!" }
         },
         removeTask: async (_: unknown, args: { taskId: string }, context: GraphQLContext) => {
             const user = requireAuth(context);
