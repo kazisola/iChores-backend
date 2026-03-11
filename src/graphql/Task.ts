@@ -39,6 +39,7 @@ export const taskTypeDefs = /* GraphQL */ `
     }
     type Mutation {
         createTask(input: CreateTaskInput): Task!
+        removeTask(taskId: String): MutationResponse!
     }
     input CreateTaskInput {
         roomId: ID!
@@ -46,6 +47,10 @@ export const taskTypeDefs = /* GraphQL */ `
         dueDate: DateTime
         recur: RecurType
         assigneeName: String!
+    }
+    type MutationResponse {
+        success: Boolean!,
+        message: String!
     }
 `
 
@@ -78,6 +83,12 @@ export const taskResolvers = {
                 householdId: user.householdId,
                 ...args.input
             })
+        },
+        removeTask: async (_: unknown, args: { taskId: string }, context: GraphQLContext) => {
+            const user = requireAuth(context);
+            if(!user.householdId) throw new Error("No household found!")
+            await Task.findOneAndDelete({_id: args.taskId, householdId: user.householdId});
+            return { success: true, message: "Deleted task successfully!" }
         }
     }
 }
