@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Room } from "../models/Room.js";
 import { requireAuth, type GraphQLContext } from "./context.js"
+import { Task } from "../models/Task.js";
 
 export const roomTypeDefs = /* GraphQL */ `
     scalar DateTime 
@@ -32,11 +33,26 @@ export const roomTypeDefs = /* GraphQL */ `
         color: String!
         createdAt: DateTime
         updatedAt: DateTime
+        tasks: [Task!]!
+    }
+    type Task {
+        id: ID!
+        roomId: ID!
+        householdId: ID!
+        title: String!
+        dueDate: DateTime
+        recur: RecurType
+        assigneeName: String!
+        isCompleted: Boolean!
+        completedAt: DateTime
+        completedBy: String
+        createdAt: DateTime
+        updatedAt: DateTime
+        urgency: Urgency!
     }
     type Query {
         myRooms: [Room!]!
     }
-
 
     input RoomPositionInput {
         x: Int!
@@ -88,6 +104,13 @@ export const roomResolvers = {
             if (!user.householdId) return [];
             const rooms = await Room.find({ householdId: user.householdId });
             return rooms;
+        },
+    },
+    Room: {
+        tasks: async (parent: { _id: mongoose.Types.ObjectId }, args: unknown, context: GraphQLContext) => {
+            const user = requireAuth(context);
+            if (!user.householdId) throw new Error("Create household first!")
+            return await Task.find({ roomId: parent._id, householdId: user.householdId });
         }
     },
     Mutation: {
@@ -120,7 +143,7 @@ export const roomResolvers = {
         updateRoomLabel: async (_: unknown, args: { input: { roomId: mongoose.Types.ObjectId, label: string } }, context: GraphQLContext) => {
             const user = requireAuth(context);
             if (!user.householdId) throw new Error("No household found!");
-            
+
             return await Room.findByIdAndUpdate(args.input.roomId, {
                 label: args.input.label
             }, { new: true });

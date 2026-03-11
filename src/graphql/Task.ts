@@ -29,7 +29,7 @@ export const taskTypeDefs = /* GraphQL */ `
         assigneeName: String!
         isCompleted: Boolean!
         completedAt: DateTime
-        completedBy: DateTime
+        completedBy: String
         createdAt: DateTime
         updatedAt: DateTime
         urgency: Urgency!
